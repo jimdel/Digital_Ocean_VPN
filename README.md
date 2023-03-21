@@ -2,6 +2,18 @@
 
 A repo for scripts related to creating my VPN on Digital Ocean
 
+## Development & Usage
+
+1. Make the shell script executable: `chmod u+x ansible-playbook.sh`
+2. Create a `.env` file containing the following:
+
+```.env
+VPN_SERVER_IP=000.000.000.000
+CA_SERVER_IP=000.000.000.000
+```
+
+3. Usage `./ansible-playbook.sh <PLAYBOOK_NAME>`
+
 ## Useful Commands
 
 - `awk -F: '{ print $1}' /etc/passwd`: print a lister of users on the Ubuntu Server

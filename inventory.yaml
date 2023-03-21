@@ -4,4 +4,6 @@ all:
     ansible_private_key_file: ~/.ssh/vpn_server
   hosts:
     vpn_server:
-      ansible_host: 000.000.000.000
+      ansible_host: '{{ lookup("env", "VPN_SERVER_IP") }}'
+    ca_server:
+      ansible_host: '{{ lookup("env", "CA_SERVER_IP") }}'
