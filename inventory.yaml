@@ -1,0 +1,7 @@
+all:
+  vars:
+    ansible_ssh_user: root
+    ansible_private_key_file: ~/.ssh/vpn_server
+  hosts:
+    vpn_server:
+      ansible_host: 000.000.000.000
