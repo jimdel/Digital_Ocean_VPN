@@ -1,0 +1,37 @@
+---
+- name: Initialize CA server
+  hosts: ca_server
+  become: true
+  become_user: "{{remote_username}}"
+  vars_prompt:
+    - name: remote_username
+      prompt: Enter username...
+      private: no
+  tasks:
+    - name: Install easy-rsa
+      apt:
+        name: easy-rsa
+        state: present
+    - name: Delete easy-rsa directory if exists
+      file:
+        path: "/home/{{remote_username}}/easy-rsa/"
+        state: absent
+    - name: Create easy-rsa directory
+      file:
+        path: "/home/{{remote_username}}/easy-rsa"
+        state: directory
+        mode: "0777"
+        force: yes
+    - name: Create symlink to easy-rsa
+      command: >
+        sh -c "ln -s /usr/share/easy-rsa/* /home/{{remote_username}}/easy-rsa/"
+    - name: Init easy-rsa
+      command: >
+        sh -c "cd /home/{{remote_username}}/easy-rsa && ./easyrsa init-pki"
+    - name: Copy vars to remote
+      copy:
+        src: "./vars.ca.txt"
+        dest: "/home/{{remote_username}}/easy-rsa/pki/vars"
+    - name: Build ca
+      command: >
+        sh -c "cd /home/{{remote_username}}/easy-rsa && echo -e '\n\n\n\n\n\n\n' | ./easyrsa build-ca nopass"
