@@ -13,6 +13,11 @@ CA_SERVER_IP=000.000.000.000
 ```
 
 3. Usage `./ansible-playbook.sh <PLAYBOOK_NAME>`
+4. Run order:
+   1. `baseconfing.yaml`
+   2. `vpnserver.one.yaml`
+   3. `copysshkey.yaml`
+   4. `vpnserver.two.yaml`
 
 ## Useful Commands
 
