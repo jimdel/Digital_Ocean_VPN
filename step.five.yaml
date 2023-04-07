@@ -1,0 +1,50 @@
+---
+- name: Initialize VPN Server Step 5
+  hosts: vpn_server
+  become: true
+  become_user: "{{remote_username}}"
+  vars_prompt:
+    - name: remote_username
+      prompt: Enter username...
+      private: no
+  tasks:
+    - name: Cleanup stale files
+      shell: "rm -rf /home/{{ remote_username }}/client-configs/keys/*"
+      become: true
+      become_user: root
+
+    - name: Copy client1.crt to client-configs/keys
+      copy:
+        content: "{{ lookup('file', './certs/client1.crt') }}"
+        dest: "/home/{{ remote_username }}/client-configs/keys/client1.crt"
+        mode: "0644"
+      become: true
+      become_user: root
+
+    - name: Copy ta.key to client-configs/keys
+      copy:
+        src: "/home/{{ remote_username }}/easy-rsa/ta.key"
+        dest: "/home/{{ remote_username }}/client-configs/keys/"
+        mode: "0644"
+        remote_src: true
+      become: true
+      become_user: root
+
+    - name: Copy ca.crt to client-configs/keys
+      copy:
+        src: "/etc/openvpn/server/ca.crt"
+        dest: "/home/{{ remote_username }}/client-configs/keys/"
+        mode: "0644"
+        remote_src: true
+      become: true
+      become_user: root
+
+    - name: Change owner of files in client-configs/keys
+      file:
+        path: "/home/{{ remote_username }}/client-configs/keys"
+        owner: "{{ remote_username }}"
+        group: "{{ remote_username }}"
+        recurse: yes
+      become: true
+      become_user: root
+# STEP 7

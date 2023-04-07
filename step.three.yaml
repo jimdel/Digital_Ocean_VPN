@@ -1,0 +1,78 @@
+---
+- name: Initialize VPN Server Step 3
+  hosts: vpn_server
+  become: true
+  become_user: "{{remote_username}}"
+  vars_prompt:
+    - name: remote_username
+      prompt: Enter username...
+      private: no
+  tasks:
+    - name: Cleanup old files
+      shell: "rm -rf /tmp/server.crt /tmp/ca.crt /etc/openvpn/server/server.crt /etc/openvpn/server/ca.crt /etc/openvpn/server/ta.key /home/{{ remote_username }}/easy-rsa/pki/private/client1.key /home/{{ remote_username }}/easy-rsa/pki/private/client1.req"
+      become: true
+      become_user: root
+    - name: Copy server.crt to remote
+      copy:
+        content: "{{ lookup('file', './certs/server.crt') }}"
+        dest: "/tmp/server.crt"
+        mode: "0644"
+    - name: Copy ca.crt to remote
+      copy:
+        content: "{{ lookup('file', './certs/ca.crt') }}"
+        dest: "/tmp/ca.crt"
+        mode: "0644"
+    - name: Copy crt files from /tmp to /etc/openvpn/server
+      copy:
+        src: "/tmp/{{ item }}"
+        dest: "/etc/openvpn/server/{{ item }}"
+        mode: "0644"
+        remote_src: yes
+      with_items:
+        - "ca.crt"
+        - "server.crt"
+      become_user: root
+      become: true
+    - name: Generate ta.key file
+      command: openvpn --genkey --secret /home/{{ remote_username }}/easy-rsa/ta.key
+      become: true
+      become_user: root
+    - name: Copy ta.key file to /etc/openvpn/server
+      copy:
+        src: "/home/{{ remote_username }}/easy-rsa/ta.key"
+        dest: "/etc/openvpn/server/ta.key"
+        mode: "0644"
+        remote_src: true
+      become: true
+      become_user: root
+    - name: Create client-configs/keys directory
+      file:
+        path: "~/client-configs/keys"
+        state: directory
+        mode: "0700"
+      become: true
+      become_user: "{{ remote_username }}"
+    - name: Generate client1 key request
+      command: ./easyrsa gen-req client1 nopass
+      args:
+        chdir: "/home/{{ remote_username }}/easy-rsa"
+        stdin: "\n\n"
+      become: true
+      become_user: root
+    - name: Copy client1.key to client-configs directory
+      copy:
+        src: "/home/{{ remote_username }}/easy-rsa/pki/private/client1.key"
+        dest: "/home/{{ remote_username }}/client-configs/keys/client1.key"
+        mode: "0644"
+        remote_src: true
+      become: true
+      become_user: root
+    - name: Copy client1 key request to local machine
+      fetch:
+        src: "/home/{{ remote_username }}/easy-rsa/pki/reqs/client1.req"
+        dest: "./reqs/"
+        flat: yes
+        mode: "0644"
+        remote_src: true
+      become: true
+      become_user: root

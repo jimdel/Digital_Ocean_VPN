@@ -1,0 +1,35 @@
+---
+- name: Initialize VPN Server Step 4
+  hosts: ca_server
+  become: true
+  become_user: "{{remote_username}}"
+  vars_prompt:
+    - name: remote_username
+      prompt: Enter username...
+      private: no
+  tasks:
+    - name: Copy client1.req to /tmp
+      copy:
+        content: "{{ lookup('file', './reqs/client1.req') }}"
+        dest: "/tmp/client1.req"
+        mode: "0644"
+    # INFO: This task fails with easyrsa because the output of the command is not a valid PEM certificate file
+    - name: Import OpenVPN CA request
+      command: openssl req -inform PEM -in /tmp/client1.req -out /home/{{ remote_username }}/easy-rsa/pki/reqs/client1.req
+      become: true
+      become_user: root
+    - name: Sign OpenVPN server certificate request
+      command: ./easyrsa sign-req client client1
+      args:
+        chdir: "/home/{{ remote_username }}/easy-rsa"
+        stdin: "yes"
+      become: true
+      become_user: root
+    - name: Copy client1.crt to local machine
+      fetch:
+        src: "/home/{{ remote_username }}/easy-rsa/pki/issued/client1.crt"
+        dest: "./certs/"
+        flat: yes
+        mode: "0644"
+      become: true
+      become_user: root

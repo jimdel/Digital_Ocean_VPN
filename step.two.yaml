@@ -1,21 +1,21 @@
 ---
-- name: Initialize VPN Part II
+- name: Initialize VPN Step 2
   hosts: ca_server
   vars_prompt:
     - name: remote_username
       prompt: Enter username...
       private: no
   tasks:
-    - name: Create new PEM file using server.req on remote server
-      copy:
-        content: "{{ lookup('file', './keys/server.req') }}"
-        dest: /tmp/server.req
-        mode: "0644"
     - name: Cleanup old files (if exists)
       become: true
       become_user: root
       ignore_errors: yes
       shell: rm -rf /home/{{ remote_username }}/easy-rsa/pki/reqs/* /home/{{ remote_username }}/easy-rsa/pki/issued/server.crt
+    - name: Create new PEM file using server.req on remote server
+      copy:
+        content: "{{ lookup('file', './reqs/server.req') }}"
+        dest: /tmp/server.req
+        mode: "0644"
     # INFO: This task fails with easyrsa because the output of the command is not a valid PEM certificate file
     - name: Import OpenVPN CA request
       command: openssl req -inform PEM -in /tmp/server.req -out /home/{{ remote_username }}/easy-rsa/pki/reqs/server.req
@@ -26,5 +26,21 @@
       args:
         chdir: "/home/{{ remote_username }}/easy-rsa"
         stdin: "yes"
+      become: true
+      become_user: root
+    - name: Copy server.crt to local machine
+      fetch:
+        src: "/home/{{ remote_username }}/easy-rsa/pki/issued/server.crt"
+        dest: "./certs/"
+        flat: yes
+        mode: "0644"
+      become: true
+      become_user: root
+    - name: Copy ca.crt to local machine
+      fetch:
+        src: "/home/{{ remote_username }}/easy-rsa/pki/ca.crt"
+        dest: "./certs/"
+        flat: yes
+        mode: "0644"
       become: true
       become_user: root

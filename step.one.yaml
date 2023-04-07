@@ -1,15 +1,17 @@
 ---
-- name: Initialize VPN Server Part I
+- name: Initialize VPN Server Step 1
   hosts: vpn_server
   become: true
   become_user: "{{remote_username}}"
-  vars:
-    ca_server: '{{ lookup("env", "CA_SERVER_IP") }}'
   vars_prompt:
     - name: remote_username
       prompt: Enter username...
       private: no
   tasks:
+    - name: Cleanup old easy-rsa dir and files
+      shell: "rm -rf /home/{{remote_username}}/easy-rsa /home/{{remote_username}}/easy-rsa/pki/reqs/server.req /home/{{remote_username}}/easy-rsa/pki/private/server.key"
+      become: true
+      become_user: root
     - name: Install OpenVPN and easy-rsa
       become: true
       become_user: root
@@ -18,10 +20,6 @@
           - openvpn
           - easy-rsa
         state: present
-    - name: Delete easy-rsa directory if exists
-      file:
-        path: "/home/{{remote_username}}/easy-rsa/"
-        state: absent
     - name: Create easy-rsa directory
       file:
         path: "/home/{{remote_username}}/easy-rsa"
@@ -42,14 +40,6 @@
         dest: "/home/{{remote_username}}/easy-rsa/pki/vars"
         force: no
         backup: yes
-    - name: Remove old server.req & server.key files if exists
-      become: true
-      become_user: root
-      file:
-        path:
-          - "/home/{{remote_username}}/easy-rsa/pki/reqs/server.req"
-          - "/home/{{remote_username}}/easy-rsa/pki/private/server.key"
-        state: absent
     - name: Build OpenVPN CA
       expect:
         command: ./easyrsa gen-req server nopass
@@ -61,7 +51,7 @@
     - name: Copy server.req to local
       fetch:
         src: "/home/{{remote_username}}/easy-rsa/pki/reqs/server.req"
-        dest: "./keys/"
+        dest: "./reqs/"
         flat: yes
         validate_checksum: yes
         mode: "0644"
